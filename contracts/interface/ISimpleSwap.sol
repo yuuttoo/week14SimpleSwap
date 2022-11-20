@@ -34,7 +34,7 @@ interface ISimpleSwap is ISimpleSwapEvent {
     /// @param tokenOut The address of the token to swap to
     /// @param amountIn The amount of tokenIn to swap
     /// @return amountOut The amount of tokenOut received
-    function swap(
+    function swap(//轉進的token, 轉出的token, 轉進的token數量
         address tokenIn,
         address tokenOut,
         uint256 amountIn
@@ -46,7 +46,7 @@ interface ISimpleSwap is ISimpleSwapEvent {
     /// @return amountA The actually amount of tokenA added
     /// @return amountB The actually amount of tokenB added
     /// @return liquidity The amount of liquidity minted
-    function addLiquidity(uint256 amountAIn, uint256 amountBIn)
+    function addLiquidity(uint256 amountAIn, uint256 amountBIn)//add LP 兩種token數量
         external
         returns (
             uint256 amountA,

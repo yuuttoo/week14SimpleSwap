@@ -6,7 +6,7 @@ export interface SimpleSwapFixture {
     tokenB: TestERC20
 }
 
-export async function deploySimpleSwapFixture(): Promise<SimpleSwapFixture> {
+export async function deploySimpleSwapFixture(): Promise<SimpleSwapFixture> {//部署erc20 token
     // Deploy tokenA, tokenB
     const ERC20Factory = (await ethers.getContractFactory("TestERC20")) as TestERC20__factory
 

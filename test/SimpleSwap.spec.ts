@@ -8,6 +8,7 @@ import { SimpleSwap, SimpleSwap__factory, TestERC20 } from "../typechain-types"
 import { deploySimpleSwapFixture, SimpleSwapFixture } from "./fixtures"
 import { sqrt } from "./utils"
 
+
 describe("SimpleSwap Spec", () => {
     let taker: SignerWithAddress
     let maker: SignerWithAddress
@@ -48,7 +49,7 @@ describe("SimpleSwap Spec", () => {
         await tokenB.connect(maker).approve(simpleSwap.address, parseUnits("1000", tokenBDecimals))
     })
 
-    describe("# constructor", () => {
+    describe("# constructor", () => {//constructor測試
         let simpleSwapFactory: SimpleSwap__factory
 
         beforeEach(async () => {
@@ -59,6 +60,8 @@ describe("SimpleSwap Spec", () => {
             await expect(simpleSwapFactory.deploy(ethers.constants.AddressZero, tokenB.address)).to.be.revertedWith(
                 "SimpleSwap: TOKENA_IS_NOT_CONTRACT",
             )
+
+            
         })
 
         it("forces error, when tokenB is not a contract", async () => {
@@ -73,7 +76,7 @@ describe("SimpleSwap Spec", () => {
             )
         })
 
-        it("reserves should be zero after contract initialized", async () => {
+        it("reserves should be zero after contract initialized", async () => {//reserve要為0
             const [reserve0, reserve1] = await simpleSwap.getReserves()
 
             expect(reserve0).to.be.eq(0)
