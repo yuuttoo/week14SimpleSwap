@@ -318,6 +318,8 @@ describe("SimpleSwap Spec", () => {
             const tokenOut = tokenB.address
             const amountIn = parseUnits("100", tokenADecimals)
             const amountOut = parseUnits("50", tokenBDecimals) // 100 * 100 / (100 + 100) = 50
+            console.log("xxxx",tokenIn, tokenOut, amountIn);
+
 
             await expect(simpleSwap.connect(taker).swap(tokenIn, tokenOut, amountIn))
                 .to.changeTokenBalances(tokenA, [taker, simpleSwap], [amountIn.mul(-1), amountIn])
