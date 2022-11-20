@@ -42,7 +42,7 @@ describe("SimpleSwap Spec", () => {
         await tokenB.mint(taker.address, parseUnits("1000", tokenBDecimals))
         await tokenB.mint(maker.address, parseUnits("1000", tokenBDecimals))
 
-        // Approve tokenA to simpleSwap
+        // Approve tokenA / B to simpleSwap
         await tokenA.connect(taker).approve(simpleSwap.address, parseUnits("1000", tokenADecimals))
         await tokenA.connect(maker).approve(simpleSwap.address, parseUnits("1000", tokenADecimals))
         await tokenB.connect(taker).approve(simpleSwap.address, parseUnits("1000", tokenBDecimals))
@@ -324,6 +324,16 @@ describe("SimpleSwap Spec", () => {
                 .to.changeTokenBalances(tokenB, [taker, simpleSwap], [amountOut, amountOut.mul(-1)])
                 .emit(simpleSwap, "Swap")
                 .withArgs(taker.address, tokenIn, tokenOut, amountIn, amountOut)
+
+            //balanceA = ERC20(tokenA).balanceOf(address(this));
+            // let x = await tokenA.balanceOf(simpleSwap.address);
+            // console.log("xxxx", x);
+            // let u = await tokenB.balanceOf(simpleSwap.address);
+            // console.log("yyyy", u);
+
+
+
+
 
             const [reserveA, reserveB] = await simpleSwap.getReserves()
             expect(reserveA).to.equal(parseUnits("200", tokenADecimals));

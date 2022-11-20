@@ -42,31 +42,45 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     /// @param tokenOut The address of the token to swap to
     /// @param amountIn The amount of tokenIn to swap
     /// @return amountOut The amount of tokenOut received
-    function swap(
+    function swap(//todo 7~ 
         address tokenIn,
         address tokenOut,
         uint256 amountIn
     ) external returns (uint256 amountOut) {
-        require(amountIn > 0 || amountOut > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");//進出需要 > 0
+        require(amountIn > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");//需要 > 0
         require(tokenIn == tokenA || tokenIn == tokenB, "SimpleSwap: INVALID_TOKEN_IN");
         require(tokenOut == tokenA || tokenOut == tokenB, "SimpleSwap: INVALID_TOKEN_OUT");
         require(tokenIn != tokenOut, "SimpleSwap: IDENTICAL_ADDRESS");//進跟出不能是同一種幣
 
-        uint balanceA;
-        uint balanceB;
+        // uint balanceA;
+        // uint balanceB;
         address sender = _msgSender();
 
-        balanceA = ERC20(tokenA).balanceOf(address(this));
-        balanceB = ERC20(tokenB).balanceOf(address(this));
+        // balanceA = ERC20(tokenA).balanceOf(address(this));
+        // balanceB = ERC20(tokenB).balanceOf(address(this));
+        uint256 k  = reserveA * reserveB;
 
         if(tokenIn == tokenA) {
-            amountIn  = balanceA > reserveA - amountOut ? balanceA - (reserveA - amountOut) : 0;
+            uint256 newA = amountIn + reserveA;
+            amountOut = ((newA * reserveB) - k) / newA;//計算給出的B amount
+            //console.log("amountOutA", amountOut);
         } else if(tokenIn == tokenB) {
-            amountIn  = balanceB > reserveB - amountOut ? balanceB - (reserveB - amountOut) : 0;
+            uint256 newB = amountIn + reserveB;
+            amountOut = ((newB * reserveA) - k) / newB;//計算給出的A amount
+            //console.log("amountOutB", amountOut);
         }
+        //console.log("amountOutC", amountOut);
 
-        _safeTransfer(tokenIn, address(this), amountIn);//user轉進協議 
-        _safeTransfer(tokenOut, msg.sender, amountOut);//給user
+        require(amountOut > 0, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");// forces error, when amountOut is zero
+        //console.log("amountOutD", amountOut);
+
+        ERC20(tokenOut).transferFrom(address(this), sender, amountOut);
+        ERC20(tokenIn).transferFrom(sender, address(this), amountIn);
+        //console.log("amountOutE", amountOut);
+
+        //_safeTransfer(tokenIn, address(this), amountIn);//user轉進協議 
+        
+        //_safeTransfer(tokenOut, msg.sender, amountOut);//給user
 
         _update(reserveA + amountIn, reserveB + amountIn);
 
