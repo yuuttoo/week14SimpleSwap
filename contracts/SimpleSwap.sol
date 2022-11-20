@@ -136,19 +136,46 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     /// @param liquidity The amount of liquidity to remove
     /// @return amountA The amount of tokenA received
     /// @return amountB The amount of tokenB received
-    //burn? 
+    //burn
     function removeLiquidity(uint256 liquidity) external returns (uint256 amountA, uint256 amountB) {
+        require(liquidity > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
+        //require(balanceA > amountA || balanceB < amountB, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
+
+        uint balanceA = ERC20(tokenA).balanceOf(address(this));
+        uint balanceB = ERC20(tokenB).balanceOf(address(this));
+        address sender = _msgSender();
+        uint _totalSupply = totalSupply();
+        
+        //計算退回的amountA amountB
+        amountA = liquidity * balanceA / _totalSupply;
+        amountB = liquidity * balanceB / _totalSupply;
+
+        require(amountA > 0 && amountB > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
+        
+        _burn(address(this), liquidity);
+
+
+        _safeTransfer(tokenA, sender, amountA);
+        _safeTransfer(tokenB, sender, amountB);
+
+        _update(reserveA - amountA, reserveB - amountB);
+        emit RemoveLiquidity(sender, amountA, amountB, liquidity);
+
 
     }
 
 
     /// @notice Get the address of tokenA
     /// @return tokenA The address of tokenA
-    function getTokenA() external view returns (address tokenA) {}
+    function getTokenA() external view returns (address) {
+        return tokenA;
+    }
 
     /// @notice Get the address of tokenB
     /// @return tokenB The address of tokenB
-    function getTokenB() external view returns (address tokenB) {}
+    function getTokenB() external view returns (address) {
+        return tokenB;
+    }
 
 
     //update reserves and, on the first call per block, price accumulators
