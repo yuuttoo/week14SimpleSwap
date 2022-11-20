@@ -71,8 +71,10 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         }
         require(amountOut > 0, "SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");// forces error, when amountOut is zero
         //console.log("amountOutD", amountOut);
+
         ERC20(tokenOut).approve(address(this), amountOut);
         ERC20(tokenOut).transferFrom(address(this), sender, amountOut);
+
         //should update here
         emit Swap(sender, tokenIn, tokenOut, amountIn, amountOut);
     }
@@ -87,7 +89,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     /// @return amountA The actually amount of tokenA added
     /// @return amountB The actually amount of tokenB added
     /// @return liquidity The amount of liquidity minted
-    function addLiquidity(uint256 amountAIn, uint256 amountBIn)//mint?
+    function addLiquidity(uint256 amountAIn, uint256 amountBIn)//mint
         external
         returns (
             uint256 amountA,
@@ -96,7 +98,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         ){
             require(amountAIn > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
             require(amountBIn > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
-            //(uint256 _reserveA, uint256 _reserveB) = getReserves();
             address sender = _msgSender();
             uint _totalSupply = totalSupply();
            
@@ -105,20 +106,22 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
                 amountA = amountAIn;
                 amountB = amountBIn;
             } else {//.min選小的
-                liquidity = Math.min(amountAIn * _totalSupply / reserveA, amountBIn * _totalSupply / reserveB);
+                liquidity = Math.min((amountAIn * _totalSupply) / reserveA, (amountBIn * _totalSupply) / reserveB);
                 amountA = (liquidity * reserveA) / _totalSupply;
                 amountB = (liquidity * reserveB) / _totalSupply;
             }
 
-        
-            ERC20(tokenA).transferFrom(sender, address(this), amountAIn);
-            ERC20(tokenB).transferFrom(sender, address(this), amountBIn);
+            // ERC20(tokenA).transferFrom(sender, address(this), amountAIn);
+            // ERC20(tokenB).transferFrom(sender, address(this), amountBIn);
+            ERC20(tokenA).transferFrom(sender, address(this), amountA);
+            ERC20(tokenB).transferFrom(sender, address(this), amountB);
                
 
             _mint(sender, liquidity);//發出LP
 
-            _update(reserveA + amountAIn, reserveB + amountBIn);   
-            emit AddLiquidity(sender, amountAIn, amountAIn, liquidity);
+            _update(reserveA + amountA, reserveB + amountB);   
+            emit AddLiquidity(sender, amountA, amountB, liquidity);
+
         }
 
     /// @notice Remove liquidity from the pool
