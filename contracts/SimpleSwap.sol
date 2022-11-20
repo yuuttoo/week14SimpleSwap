@@ -16,6 +16,11 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     uint256 private reserveA;
     uint256 private reserveB;
 
+    
+
+    bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+
+
 
 
     constructor(address _tokenA, address _tokenB) ERC20("SimpSwap", "STK") {
@@ -42,7 +47,30 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         address tokenOut,
         uint256 amountIn
     ) external returns (uint256 amountOut) {
+        require(amountIn > 0 || amountOut > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");//進出需要 > 0
+        require(tokenIn == tokenA || tokenIn == tokenB, "SimpleSwap: INVALID_TOKEN_IN");
+        require(tokenOut == tokenA || tokenOut == tokenB, "SimpleSwap: INVALID_TOKEN_OUT");
+        require(tokenIn != tokenOut, "SimpleSwap: IDENTICAL_ADDRESS");//進跟出不能是同一種幣
 
+        uint balanceA;
+        uint balanceB;
+        address sender = _msgSender();
+
+        balanceA = ERC20(tokenA).balanceOf(address(this));
+        balanceB = ERC20(tokenB).balanceOf(address(this));
+
+        if(tokenIn == tokenA) {
+            amountIn  = balanceA > reserveA - amountOut ? balanceA - (reserveA - amountOut) : 0;
+        } else if(tokenIn == tokenB) {
+            amountIn  = balanceB > reserveB - amountOut ? balanceB - (reserveB - amountOut) : 0;
+        }
+
+        _safeTransfer(tokenIn, address(this), amountIn);//user轉進協議 
+        _safeTransfer(tokenOut, msg.sender, amountOut);//給user
+
+        _update(reserveA + amountIn, reserveB + amountIn);
+
+        emit Swap(sender, tokenIn, tokenOut, amountIn, amountOut);
 
     }
 
@@ -130,5 +158,10 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     // of the constructor execution.
     function isContract(address account) internal view returns (bool) {
         return account.code.length > 0;
+    }    
+
+    function _safeTransfer(address token, address to, uint value) private {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "SimpleSwap: TRANSFER_FAILED");
     }    
 }
