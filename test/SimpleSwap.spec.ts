@@ -320,9 +320,9 @@ describe("SimpleSwap Spec", () => {
             const amountOut = parseUnits("50", tokenBDecimals) // 100 * 100 / (100 + 100) = 50
             
             let x = await tokenA.balanceOf(simpleSwap.address);
-            console.log("xxxx", x);
+            //console.log("xxxx", x);
             let k = await tokenB.balanceOf(simpleSwap.address);
-            console.log("kkkk", k);
+            //console.log("kkkk", k);
             await expect(simpleSwap.connect(taker).swap(tokenIn, tokenOut, amountIn))
                 .to.changeTokenBalances(tokenA, [taker, simpleSwap], [amountIn.mul(-1), amountIn])
                 .to.changeTokenBalances(tokenB, [taker, simpleSwap], [amountOut, amountOut.mul(-1)])
@@ -330,16 +330,14 @@ describe("SimpleSwap Spec", () => {
                 .withArgs(taker.address, tokenIn, tokenOut, amountIn, amountOut)
 
             let d = await tokenA.balanceOf(simpleSwap.address);
-            console.log("dddd", d);
+            //console.log("dddd", d);
             let z = await tokenB.balanceOf(simpleSwap.address);
-            console.log("zzzz", z);
+            //console.log("zzzz", z);
             //balanceA = ERC20(tokenA).balanceOf(address(this));
             // let x = await tokenA.balanceOf(simpleSwap.address);
             // console.log("xxxx", x);
             // let u = await tokenB.balanceOf(simpleSwap.address);
             // console.log("yyyy", u);
-
-
 
 
 
