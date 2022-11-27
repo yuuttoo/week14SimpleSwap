@@ -2,9 +2,9 @@
 pragma solidity 0.8.17;
 
 import { ISimpleSwap } from "./interface/ISimpleSwap.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "hardhat/console.sol";
 
 
@@ -12,9 +12,8 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     // Implement core logic here
     address public tokenA;
     address public tokenB;
-
-    uint256 private reserveA;
-    uint256 private reserveB;
+    uint256 public reserveA;
+    uint256 public reserveB;
 
     
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
@@ -58,10 +57,10 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         require(tokenIn != tokenOut, "SimpleSwap: IDENTICAL_ADDRESS");//進跟出不能是同一種幣
 
         address sender = _msgSender();
-        uint256 _totalSupply = totalSupply();
+        uint256 totalSupply = totalSupply();
         uint256 k  = reserveA * reserveB;
 
-        ERC20(tokenIn).transferFrom(sender, address(this), amountIn);//user to swap
+        IERC20(tokenIn).transferFrom(sender, address(this), amountIn);//user to swap
         //console.log("amountIn", amountIn);
         if(tokenIn == tokenA) {
             uint256 newA = amountIn + reserveA;
@@ -79,8 +78,8 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         //console.log("amountOutD", amountOut);
         //console.log("reserve0",reserveA, reserveB);
 
-        ERC20(tokenOut).approve(address(this), amountOut);
-        ERC20(tokenOut).transferFrom(address(this), sender, amountOut);
+        IERC20(tokenOut).approve(address(this), amountOut);
+        IERC20(tokenOut).transferFrom(address(this), sender, amountOut);
 
         //console.log("reserve1",reserveA, reserveB);
 
@@ -93,8 +92,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         //console.log("reserve2",reserveA, reserveB);
 
         
-       
-
         //should update here
         emit Swap(sender, tokenIn, tokenOut, amountIn, amountOut);
     }
@@ -120,22 +117,22 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             require(amountAIn > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
             require(amountBIn > 0, "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
             address sender = _msgSender();
-            uint _totalSupply = totalSupply();
+            uint totalSupply = totalSupply();
            
-            if(_totalSupply == 0) { //first time 
+            if(totalSupply == 0) { //first time 
                 liquidity = Math.sqrt(amountAIn * amountBIn);
                 amountA = amountAIn;
                 amountB = amountBIn;
             } else {//.min選小的
-                liquidity = Math.min((amountAIn * _totalSupply) / reserveA, (amountBIn * _totalSupply) / reserveB);
-                amountA = (liquidity * reserveA) / _totalSupply;
-                amountB = (liquidity * reserveB) / _totalSupply;
+                liquidity = Math.min((amountAIn * totalSupply) / reserveA, (amountBIn * totalSupply) / reserveB);
+                amountA = (liquidity * reserveA) / totalSupply;
+                amountB = (liquidity * reserveB) / totalSupply;
             }
 
             // ERC20(tokenA).transferFrom(sender, address(this), amountAIn);
             // ERC20(tokenB).transferFrom(sender, address(this), amountBIn);
-            ERC20(tokenA).transferFrom(sender, address(this), amountA);
-            ERC20(tokenB).transferFrom(sender, address(this), amountB);
+            IERC20(tokenA).transferFrom(sender, address(this), amountA);
+            IERC20(tokenB).transferFrom(sender, address(this), amountB);
                
 
             _mint(sender, liquidity);//發出LP
@@ -153,21 +150,21 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     function removeLiquidity(uint256 liquidity) external lock returns (uint256 amountA, uint256 amountB) {
         require(liquidity > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
 
-        uint balanceA = ERC20(tokenA).balanceOf(address(this));
-        uint balanceB = ERC20(tokenB).balanceOf(address(this));
+        uint balanceA = IERC20(tokenA).balanceOf(address(this));
+        uint balanceB = IERC20(tokenB).balanceOf(address(this));
         address sender = _msgSender();
-        uint _totalSupply = totalSupply();
+        uint totalSupply = totalSupply();
         
         //user send lp to swap 
         _transfer(sender, address(this), liquidity);
 
         //計算退回給user的amountA amountB
-        amountA = liquidity * balanceA / _totalSupply;
-        amountB = liquidity * balanceB / _totalSupply;
+        amountA = liquidity * balanceA / totalSupply;
+        amountB = liquidity * balanceB / totalSupply;
 
         //合約退給user
-        ERC20(tokenA).transfer(sender, amountA);
-        ERC20(tokenB).transfer(sender, amountB);
+        IERC20(tokenA).transfer(sender, amountA);
+        IERC20(tokenB).transfer(sender, amountB);
         
         //燒毀合約拿到的lp 
         _burn(address(this), liquidity);
