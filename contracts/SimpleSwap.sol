@@ -15,9 +15,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     uint256 public reserveA;
     uint256 public reserveB;
 
-    
-    bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
-
 
     uint private unlocked = 1;
     modifier lock() {
@@ -38,14 +35,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     }
 
 
-
-
-
-    /// @notice Swap tokenIn for tokenOut with amountIn
-    /// @param tokenIn The address of the token to swap from
-    /// @param tokenOut The address of the token to swap to
-    /// @param amountIn The amount of tokenIn to swap
-    /// @return amountOut The amount of tokenOut received
     function swap(
         address tokenIn,
         address tokenOut,
@@ -83,7 +72,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
         //console.log("reserve1",reserveA, reserveB);
 
-        //做完swap需要update pool才會把新值更新上鏈
+        //做完swap需要update pool才會把值更新上鏈
         if(tokenIn == tokenA) {
             _update(reserveA + amountIn, reserveB - amountOut);
         } else if(tokenIn == tokenB) {
@@ -97,15 +86,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     }
 
 
-
-
-
-    /// @notice Add liquidity to the pool
-    /// @param amountAIn The amount of tokenA to add
-    /// @param amountBIn The amount of tokenB to add
-    /// @return amountA The actually amount of tokenA added
-    /// @return amountB The actually amount of tokenB added
-    /// @return liquidity The amount of liquidity minted
     function addLiquidity(uint256 amountAIn, uint256 amountBIn)//mint
         external
         lock
@@ -120,19 +100,21 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             uint totalSupply = totalSupply();
            
             if(totalSupply == 0) { //first time 
-                liquidity = Math.sqrt(amountAIn * amountBIn);
-                amountA = amountAIn;
-                amountB = amountBIn;
+                liquidity = Math.sqrt(amountAIn * amountBIn);//流動性為池內A,B相乘後開根號，即為常數k(以kLast代稱)開根號
+                amountA = amountAIn; //因為原本為0 加入多少就會是多少
+                amountB = amountBIn; //因為原本為0 加入多少就會是多少
             } else {//.min選小的
+                //流動性選後面二者中較小的:  (池內新加入的tokenA數量*lastK) / 池內tokenA餘額,  (池內新加入的tokenB數量*lastK) / 池內tokenB餘額
                 liquidity = Math.min((amountAIn * totalSupply) / reserveA, (amountBIn * totalSupply) / reserveB);
-                amountA = (liquidity * reserveA) / totalSupply;
-                amountB = (liquidity * reserveB) / totalSupply;
+                //因為給出的lp需要與加入的tokenA,B相匹配，需要以lp重新計算加入池內的tokenA, B amount
+                amountA = (liquidity * reserveA) / totalSupply;//加入池內的tokenA數量為上面計算的(流動性 * 池內A餘額) / lastK
+                amountB = (liquidity * reserveB) / totalSupply;//加入池內的tokenB數量為上面計算的(流動性 * 池內B餘額) / lastK
             }
 
             // ERC20(tokenA).transferFrom(sender, address(this), amountAIn);
             // ERC20(tokenB).transferFrom(sender, address(this), amountBIn);
-            IERC20(tokenA).transferFrom(sender, address(this), amountA);
-            IERC20(tokenB).transferFrom(sender, address(this), amountB);
+            IERC20(tokenA).transferFrom(sender, address(this), amountA); //user轉tokenA到池子
+            IERC20(tokenB).transferFrom(sender, address(this), amountB);//user轉tokenB到池子
                
 
             _mint(sender, liquidity);//發出LP
@@ -142,16 +124,11 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
         }
 
-    /// @notice Remove liquidity from the pool
-    /// @param liquidity The amount of liquidity to remove
-    /// @return amountA The amount of tokenA received
-    /// @return amountB The amount of tokenB received
+
     //burn user轉入LP到合約進行燒毀，計算等值amountA amountB退還user
     function removeLiquidity(uint256 liquidity) external lock returns (uint256 amountA, uint256 amountB) {
         require(liquidity > 0, "SimpleSwap: INSUFFICIENT_LIQUIDITY_BURNED");
 
-        uint balanceA = IERC20(tokenA).balanceOf(address(this));
-        uint balanceB = IERC20(tokenB).balanceOf(address(this));
         address sender = _msgSender();
         uint totalSupply = totalSupply();
         
@@ -159,11 +136,11 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         _transfer(sender, address(this), liquidity);
 
         //計算退回給user的amountA amountB
-        amountA = liquidity * balanceA / totalSupply;
-        amountB = liquidity * balanceB / totalSupply;
+        amountA = liquidity * reserveA / totalSupply; //退回user的A數量為 (傳回池子的lp份額 * 池內tokenA餘額) / lastK
+        amountB = liquidity * reserveB / totalSupply; //退回user的B數量為 (傳回池子的lp份額 * 池內tokenB餘額) / lastK
 
         //合約退給user
-        IERC20(tokenA).transfer(sender, amountA);
+        IERC20(tokenA).transfer(sender, amountA); 
         IERC20(tokenB).transfer(sender, amountB);
         
         //燒毀合約拿到的lp 
@@ -174,14 +151,10 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     }
 
 
-    /// @notice Get the address of tokenA
-    /// @return tokenA The address of tokenA
     function getTokenA() external view returns (address) {
         return tokenA;
     }
 
-    /// @notice Get the address of tokenB
-    /// @return tokenB The address of tokenB
     function getTokenB() external view returns (address) {
         return tokenB;
     }
@@ -196,11 +169,9 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     // @notice Get the reserves of the pool
     // @return reserveA The reserve of tokenA
     // @return reserveB The reserve of tokenB
-    function getReserves() external view returns (uint256 _reserveA, uint256 _reserveB) {
-        _reserveA = reserveA;
-        _reserveB = reserveB;
+    function getReserves() external view returns (uint256, uint256) {
+        return (reserveA, reserveB);
     }
-
 
 
     // This method relies on extcodesize/address.code.length, which returns 0
